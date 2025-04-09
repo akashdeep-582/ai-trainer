@@ -36,7 +36,7 @@ export default function AutoDataCollector() {
   const [status, setStatus] = useState("⏳ Loading...");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" });
   const [poseQuality, setPoseQuality] = useState(0);
-  const [smoothPoseQuality, setSmoothPoseQuality] = useState(0);
+  const smoothPoseQuality = useRef(0);
   const [step, setStep] = useState(0);
 
   const steps = ["Select Label", "Record Poses", "Download Dataset"];
@@ -142,10 +142,16 @@ export default function AutoDataCollector() {
           drawSkeleton(skeletonCtx, keypoints);
 
           const goodPoints = keypoints.filter((kp) => kp.score > 0.5);
-          setPoseQuality((goodPoints.length / 33) * 100);
 
-          // Smooth pose quality
-          setSmoothPoseQuality(prev => prev + 0.1 * (poseQuality - prev));
+          const newPoseQuality = (goodPoints.length / 33) * 100
+          
+         // Smooth the value using linear interpolation
+          smoothPoseQuality.current = smoothPoseQuality.current + 0.1 * (newPoseQuality - smoothPoseQuality.current);
+
+         // Only update poseQuality state if it has changed significantly
+          if (Math.abs(smoothPoseQuality.current - poseQuality) > 0.1) {
+            setPoseQuality(smoothPoseQuality.current);
+          }
 
           if (goodPoints.length >= 25) {
             setStatus("✅ Most keypoints detected, ready to capture");
@@ -183,7 +189,7 @@ export default function AutoDataCollector() {
       <Chip label={status} color={status.includes("✅") ? "success" : "warning"} />
       <Stack sx={{ width: "100%", maxWidth: 500 }}>
         <Typography variant="caption">Pose Quality</Typography>
-        <LinearProgress variant="determinate" value={smoothPoseQuality} sx={{ borderRadius: 1, transition: "all 0.5s ease" }} />
+        <LinearProgress variant="determinate" value={smoothPoseQuality.current} sx={{ borderRadius: 1, transition: "all 0.5s ease" }} />
       </Stack>
 
       <Stack direction="row" spacing={2}>
