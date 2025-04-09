@@ -1,9 +1,8 @@
-// AutoDataCollector with Mediapipe BlazePose (x, y, z, score) + New Exercises latets
-
 import { useEffect, useRef, useState } from "react";
 import * as tf from "@tensorflow/tfjs";
 import * as poseDetection from "@tensorflow-models/pose-detection";
 import { downloadJSON } from "../utils/savePoseData";
+import { Link } from "react-router-dom"
 import {
   Button,
   Chip,
@@ -26,18 +25,19 @@ export default function AutoDataCollector() {
   const detectorRef = useRef(null);
   const smoothedKeypointsRef = useRef([]);
   const [data, setData] = useState([]);
-  const [label, setLabel] = useState("good");
+  const [label, setLabel] = useState("Good Squat");
   const [recording, setRecording] = useState(false);
   const recordingRef = useRef(false);
-  const exerciseRef = useRef("left_bicep");
-  const labelRef = useRef("good");
-  const [exercise, setExercise] = useState("left_bicep");
+  const exerciseRef = useRef("squat");  // Fixed to squat
+  const labelRef = useRef("Good Squat");
+  const [exercise, setExercise] = useState("squat");  // Fixed to squat
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("⏳ Loading...");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" });
   const [poseQuality, setPoseQuality] = useState(0);
   const smoothPoseQuality = useRef(0);
   const [step, setStep] = useState(0);
+  const lastSpokenRef = useRef(0);
 
   const steps = ["Select Label", "Record Poses", "Download Dataset"];
 
@@ -84,8 +84,8 @@ export default function AutoDataCollector() {
 
   const drawSkeleton = (ctx, keypoints) => {
     const pairs = [
-      [0,1],[1,2],[2,3],[3,7], [0,4],[4,5],[5,6],[6,8],
-      [9,10],[11,12],[11,13],[13,15],[12,14],[14,16]
+      [11,12], [11,13], [12,14], [13,15], [14,16], [11,23], [12,24], 
+      [23,25], [24,26], [25,27], [26,28],
     ];
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -143,12 +143,11 @@ export default function AutoDataCollector() {
 
           const goodPoints = keypoints.filter((kp) => kp.score > 0.5);
 
-          const newPoseQuality = (goodPoints.length / 33) * 100
+          const newPoseQuality = (goodPoints.length / 33) * 100;
           
-         // Smooth the value using linear interpolation
+          // Smooth the value using linear interpolation
           smoothPoseQuality.current = smoothPoseQuality.current + 0.1 * (newPoseQuality - smoothPoseQuality.current);
 
-         // Only update poseQuality state if it has changed significantly
           if (Math.abs(smoothPoseQuality.current - poseQuality) > 0.1) {
             setPoseQuality(smoothPoseQuality.current);
           }
@@ -156,7 +155,15 @@ export default function AutoDataCollector() {
           if (goodPoints.length >= 25) {
             setStatus("✅ Most keypoints detected, ready to capture");
           } else {
-            setStatus("⚠️ Step back / adjust position");
+            const msg = "Step back or adjust position";
+            setStatus(msg);
+
+            // Speak only bad posture feedback every 5 seconds
+            const now = Date.now();
+            if (now - lastSpokenRef.current > 5000) {
+              speak(msg);
+              lastSpokenRef.current = now;
+            }
           }
 
           if (recordingRef.current && goodPoints.length >= 25) {
@@ -174,6 +181,19 @@ export default function AutoDataCollector() {
     };
     detect();
   };
+
+  const speak = (text) => {
+    const synth = window.speechSynthesis;
+    if (!synth.speaking) {
+      const cleaned = text.replace(/[^\w\s]/g, "").trim(); // remove symbols/emojis
+      const utterance = new SpeechSynthesisUtterance(cleaned);
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      synth.speak(utterance);
+    }
+  };
+
+  const isDisabled = recording;
 
   return (
     <Stack spacing={3} alignItems="center" sx={{ p: 3 }}>
@@ -193,14 +213,13 @@ export default function AutoDataCollector() {
       </Stack>
 
       <Stack direction="row" spacing={2}>
-        {["left_bicep", "right_bicep", "left_shoulder", "right_shoulder", "rest"].map((ex) => (
-          <Button key={ex} variant={exercise === ex ? "contained" : "outlined"} color="primary" onClick={() => updateExercise(ex)}>{ex.replace("_", " ")}</Button>
-        ))}
+        <Button key="squat" variant={exercise === "squat" ? "contained" : "outlined"} color="primary" onClick={() => updateExercise("squat")}>Squat</Button>
       </Stack>
 
       <Stack direction="row" spacing={2}>
-        <Button variant={label === "good" ? "contained" : "outlined"} color="success" onClick={() => updateLabel("good")}>Good</Button>
-        <Button variant={label === "bad" ? "contained" : "outlined"} color="error" onClick={() => updateLabel("bad")}>Bad</Button>
+        {["Feet Too Wide Apart", "Feet Too Close Together", "Not Bending Enough", "Knees Not Tracking Over Toes", "Good Squat"].map((ex) => (
+          <Button key={ex} variant={label === ex ? "contained" : "outlined"} color="primary" onClick={() => updateLabel(ex)}>{ex}</Button>
+        ))}
       </Stack>
 
       <Stack direction="row" spacing={2}>
@@ -211,8 +230,14 @@ export default function AutoDataCollector() {
       <Typography variant="body1" fontWeight="500">Captured Samples: {data.length}</Typography>
 
       {step === 2 && (<Button variant="outlined" color="secondary" onClick={resetSession}>Reset Session & Start New</Button>)}
-
-      <Button variant="contained" color="secondary" onClick={() => { downloadJSON(data); setSnackbar({ open: true, message: "Dataset Downloaded", severity: "info" }); }}>Download Dataset</Button>
+      <Link to={isDisabled ? "#" : "/train"}
+        style={{
+          pointerEvents: isDisabled ? "none" : "auto",
+          textDecoration: "none",
+          opacity: isDisabled ? 0.5 : 1,
+        }} >
+        <Button variant="contained" color="secondary" onClick={() => { downloadJSON(data); setSnackbar({ open: true, message: "Dataset Downloaded", severity: "info" }); }}>Download Dataset</Button>
+      </Link>
 
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert severity={snackbar.severity} variant="filled">{snackbar.message}</Alert>

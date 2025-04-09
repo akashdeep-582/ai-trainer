@@ -1,9 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-// import AutoDataCollector from "./components/AutoDataCollector";
 import AutoDataCollectorApple from "./components/AutoDataCollectorApple";
-import TrainingPage from "./components/TrainingPage";
 import TrainingPageApple from "./components/TrainingPageApple";
-import AutoDataCollector from "./components/DataCollector"
 import Home from "./components/Home";
 import Navigation from "./components/Navigation";
 

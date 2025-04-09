@@ -24,6 +24,9 @@ export default function PredictPage() {
   const [labels, setLabels] = useState([]);
   const labelsRef = useRef([]);
   const predictionBuffer = useRef([]);
+  const lastSpokenRef = useRef(0);
+  const lastPredictionSpokenRef = useRef(0);
+  const lastPredictionRef = useRef("");
 
   useEffect(() => {
     const init = async () => {
@@ -47,13 +50,41 @@ export default function PredictPage() {
     init();
   }, []);
 
+  useEffect(() => {
+    const now = Date.now();
+
+    if (
+      prediction &&
+      !status.includes("Step back") &&
+      prediction !== lastPredictionRef.current &&
+      now - lastPredictionSpokenRef.current > 5000
+    ) {
+        if (!prediction.toLowerCase().includes("good")) {
+            speak(`Detected ${prediction}`);
+          }
+      lastPredictionRef.current = prediction;
+      lastPredictionSpokenRef.current = now;
+    }
+  }, [prediction, status]);
+
+  const speak = (text) => {
+    const synth = window.speechSynthesis;
+    if (!synth.speaking) {
+      const cleaned = text.replace(/[^\w\s]/g, "").trim();
+      const utterance = new SpeechSynthesisUtterance(cleaned);
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      synth.speak(utterance);
+    }
+  };
+
   const handleFilesUpload = async (e) => {
     const files = Array.from(e.target.files);
 
     const jsonFile = files.find(f => f.name.endsWith(".json") && f.name !== "labels.json");
     const binFile = files.find(f => f.name.endsWith(".bin"));
     const labelsFile = files.find(f => f.name === "labels.json");
-    
+
 
     if (!jsonFile || !binFile || !labelsFile) {
       alert("Please upload model.json, weights.bin, and labels.json together.");
@@ -94,11 +125,13 @@ export default function PredictPage() {
     ctx.strokeStyle = "rgba(0,0,0,0.3)";
     ctx.lineWidth = 1.5;
 
+    // Updated pairs based on AutoDataCollector for squat detection
     const pairs = [
-      [0,1],[1,2],[2,3],[3,7], [0,4],[4,5],[5,6],[6,8],
-      [9,10],[11,12],[11,13],[13,15],[12,14],[14,16]
-    ];
+        [11,12], [11,13], [12,14], [13,15], [14,16], [11,23], [12,24], 
+        [23,25], [24,26], [25,27], [26,28],
+      ];
 
+    // Draw lines for the pairs (skeleton)
     pairs.forEach(([i, j]) => {
       if (keypoints[i] && keypoints[j] && keypoints[i].score > 0.5 && keypoints[j].score > 0.5) {
         ctx.beginPath();
@@ -108,6 +141,7 @@ export default function PredictPage() {
       }
     });
 
+    // Draw keypoints
     keypoints.forEach((kp) => {
       if (kp.score > 0.5) {
         const x = (kp.x + 1) / 2 * ctx.canvas.width;
@@ -163,8 +197,15 @@ export default function PredictPage() {
             setPrediction("");
           }
         } else {
-          setStatus("⚠️ No Pose Detected");
+          const msg = "Step back or adjust position";
+          setStatus(msg);
           setPrediction("");
+
+          const now = Date.now();
+          if (now - lastSpokenRef.current > 5000) {
+            speak(msg);
+            lastSpokenRef.current = now;
+          }
         }
       }
       requestAnimationFrame(detect);

@@ -13,6 +13,7 @@ import {
 import { Line } from "react-chartjs-2";
 import 'chart.js/auto';
 import { saveAs } from "file-saver";
+import { Link } from "react-router-dom";
 
 export default function TrainingPage() {
   const [data, setData] = useState([]);
@@ -153,9 +154,21 @@ export default function TrainingPage() {
         />
       </Paper>
 
-      <Button variant="contained" color="success" onClick={saveModelAndLabels} disabled={!model}>
-        Save Model + Labels
-      </Button>
+      {/* Link to Predict Page, disable until model is ready */}
+      <Link to={training || !model ? "#" : "/predict"} style={{ textDecoration: 'none' }}>
+        <Button 
+          variant="contained" 
+          color="success" 
+          onClick={saveModelAndLabels} 
+          disabled={training || !model} 
+          style={{
+            pointerEvents: training || !model ? "none" : "auto", 
+            opacity: training || !model ? 0.5 : 1
+          }}
+        >
+          Save Model + Labels
+        </Button>
+      </Link>
 
       {message && <Alert severity="info">{message}</Alert>}
     </Stack>
