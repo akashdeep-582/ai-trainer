@@ -91,7 +91,6 @@ export default function PredictPage() {
       return;
     }
 
-    // Load labels.json
     const labelsText = await labelsFile.text();
     const parsedLabels = JSON.parse(labelsText);
     if (!Array.isArray(parsedLabels)) {
@@ -101,7 +100,6 @@ export default function PredictPage() {
     setLabels(parsedLabels);
     labelsRef.current = parsedLabels;
 
-    // Load Model
     try {
       const model = await tf.loadLayersModel(tf.io.browserFiles([jsonFile, binFile]));
       modelRef.current = model;
@@ -125,13 +123,11 @@ export default function PredictPage() {
     ctx.strokeStyle = "rgba(0,0,0,0.3)";
     ctx.lineWidth = 1.5;
 
-    // Updated pairs based on AutoDataCollector for squat detection
     const pairs = [
         [11,12], [11,13], [12,14], [13,15], [14,16], [11,23], [12,24], 
         [23,25], [24,26], [25,27], [26,28],
       ];
 
-    // Draw lines for the pairs (skeleton)
     pairs.forEach(([i, j]) => {
       if (keypoints[i] && keypoints[j] && keypoints[i].score > 0.5 && keypoints[j].score > 0.5) {
         ctx.beginPath();
@@ -141,7 +137,6 @@ export default function PredictPage() {
       }
     });
 
-    // Draw keypoints
     keypoints.forEach((kp) => {
       if (kp.score > 0.5) {
         const x = (kp.x + 1) / 2 * ctx.canvas.width;

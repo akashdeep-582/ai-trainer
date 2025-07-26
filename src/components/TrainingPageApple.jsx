@@ -25,7 +25,6 @@ export default function TrainingPage() {
   const [message, setMessage] = useState("");
   const [labelList, setLabelList] = useState([]);
 
-  // ✅ Smooth Progress Animation
   useEffect(() => {
     const interval = setInterval(() => {
       setSmoothProgress(prev => prev + 0.05 * (progress - prev));
@@ -37,14 +36,12 @@ export default function TrainingPage() {
     tf.ready().then(() => console.log("✅ TensorFlow Ready (TrainingPage)"));
   }, []);
 
-  // ✅ Handle Dataset Upload
   const handleUpload = (e) => {
     const fileReader = new FileReader();
     fileReader.onload = () => {
       const jsonData = JSON.parse(fileReader.result);
       setData(jsonData);
 
-      // Automatically detect labels
       const uniqueLabels = [...new Set(jsonData.map(d => d.label))];
       setLabelList(uniqueLabels);
       setMessage(`✅ Dataset Loaded (${uniqueLabels.length} classes detected)`);
@@ -52,7 +49,7 @@ export default function TrainingPage() {
     fileReader.readAsText(e.target.files[0]);
   };
 
-  // ✅ Prepare Data
+  // Prepare Data
   const prepareData = () => {
     const inputs = [];
     const labels = [];
@@ -66,7 +63,7 @@ export default function TrainingPage() {
     return { xs, ys };
   };
 
-  // ✅ Train Model
+  // Train Model
   const trainModel = async () => {
     setTraining(true);
     const { xs, ys } = prepareData();
@@ -102,7 +99,7 @@ export default function TrainingPage() {
     });
   };
 
-  // ✅ Save Model + Labels
+  // Save Model + Labels
   const saveModelAndLabels = async () => {
     if (!model) return;
     await model.save("downloads://pose-classifier");

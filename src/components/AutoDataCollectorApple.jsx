@@ -28,9 +28,9 @@ export default function AutoDataCollector() {
   const [label, setLabel] = useState("Good Squat");
   const [recording, setRecording] = useState(false);
   const recordingRef = useRef(false);
-  const exerciseRef = useRef("squat");  // Fixed to squat
+  const exerciseRef = useRef("squat"); 
   const labelRef = useRef("Good Squat");
-  const [exercise, setExercise] = useState("squat");  // Fixed to squat
+  const [exercise, setExercise] = useState("squat"); 
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("⏳ Loading...");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" });
@@ -54,7 +54,7 @@ export default function AutoDataCollector() {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
           videoRef.current.play();
-          setTimeout(() => setReady(true), 800); // soft stepper delay
+          setTimeout(() => setReady(true), 800);
           detectLoop();
         };
       }
@@ -93,11 +93,9 @@ export default function AutoDataCollector() {
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    // Smooth background
     ctx.fillStyle = "#fafafa";
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    // Smooth lines
     ctx.strokeStyle = "rgba(0,0,0,0.3)";
     ctx.lineWidth = 1.5;
     pairs.forEach(([i, j]) => {
@@ -109,7 +107,6 @@ export default function AutoDataCollector() {
       }
     });
 
-    // Glow points
     keypoints.forEach((kp) => {
       if (kp.score > 0.5) {
         const x = (kp.x + 1) / 2 * ctx.canvas.width;
@@ -145,7 +142,6 @@ export default function AutoDataCollector() {
 
           const newPoseQuality = (goodPoints.length / 33) * 100;
           
-          // Smooth the value using linear interpolation
           smoothPoseQuality.current = smoothPoseQuality.current + 0.1 * (newPoseQuality - smoothPoseQuality.current);
 
           if (Math.abs(smoothPoseQuality.current - poseQuality) > 0.1) {
@@ -158,7 +154,6 @@ export default function AutoDataCollector() {
             const msg = "Step back or adjust position";
             setStatus(msg);
 
-            // Speak only bad posture feedback every 5 seconds
             const now = Date.now();
             if (now - lastSpokenRef.current > 5000) {
               speak(msg);
@@ -185,7 +180,7 @@ export default function AutoDataCollector() {
   const speak = (text) => {
     const synth = window.speechSynthesis;
     if (!synth.speaking) {
-      const cleaned = text.replace(/[^\w\s]/g, "").trim(); // remove symbols/emojis
+      const cleaned = text.replace(/[^\w\s]/g, "").trim();
       const utterance = new SpeechSynthesisUtterance(cleaned);
       utterance.rate = 1;
       utterance.pitch = 1;
